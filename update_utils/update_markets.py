@@ -58,7 +58,7 @@ def update_markets(csv_filename: str = "markets.csv", batch_size: int = 500):
             writer.writerow(headers)
         
         while True:
-            print(f"Fetching batch at offset {current_offset}...")
+            # print(f"Fetching batch at offset {current_offset}...")
             
             try:
                 params = {

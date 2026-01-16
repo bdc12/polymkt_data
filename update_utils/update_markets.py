@@ -3,6 +3,7 @@ import csv
 import json
 import os
 from typing import List, Dict
+import time
 
 def count_csv_lines(csv_filename: str) -> int:
     """Count the number of data lines in CSV (excluding header)"""
@@ -30,9 +31,9 @@ def update_markets(csv_filename: str = "markets.csv", batch_size: int = 500):
     
     base_url = "https://gamma-api.polymarket.com/markets"
     
-    # CSV headers for the required columns
+    # --- ALTERAÇÃO 1: Adicionado 'category' nos headers ---
     headers = [
-        'createdAt', 'id', 'question', 'answer1', 'answer2', 'neg_risk', 
+        'createdAt', 'id', 'question', 'category', 'answer1', 'answer2', 'neg_risk', 
         'market_slug', 'token1', 'token2', 'condition_id', 'volume', 'ticker', 'closedTime'
     ]
     
@@ -72,18 +73,15 @@ def update_markets(csv_filename: str = "markets.csv", batch_size: int = 500):
                 # Handle different HTTP status codes
                 if response.status_code == 500:
                     print(f"Server error (500) - retrying in 5 seconds...")
-                    import time
                     time.sleep(5)
                     continue
                 elif response.status_code == 429:
                     print(f"Rate limited (429) - waiting 10 seconds...")
-                    import time
                     time.sleep(10)
                     continue
                 elif response.status_code != 200:
                     print(f"API error {response.status_code}: {response.text}")
                     print("Retrying in 3 seconds...")
-                    import time
                     time.sleep(3)
                     continue
                 
@@ -127,14 +125,18 @@ def update_markets(csv_filename: str = "markets.csv", batch_size: int = 500):
                         ticker = ''
                         if market.get('events') and len(market.get('events', [])) > 0:
                             ticker = market['events'][0].get('ticker', '')
-                        
+
+                        # --- ALTERAÇÃO 2: Extrair a categoria ---
+                        category = market.get('category', '')
+
                         row = [
                             market.get('createdAt', ''),
                             market.get('id', ''),
                             question_text,
+                            category,  # --- ALTERAÇÃO 3: Inserir a categoria na linha ---
                             answer1,
                             answer2,
-                            neg_risk,
+                            neg_risk, 
                             market.get('slug', ''),
                             token1,
                             token2,
@@ -164,19 +166,14 @@ def update_markets(csv_filename: str = "markets.csv", batch_size: int = 500):
             except requests.exceptions.RequestException as e:
                 print(f"Network error: {e}")
                 print(f"Retrying in 5 seconds...")
-                import time
                 time.sleep(5)
                 continue
             except Exception as e:
                 print(f"Unexpected error: {e}")
                 print(f"Retrying in 3 seconds...")
-                import time
                 time.sleep(3)
                 continue
     
     print(f"\nCompleted! Fetched {total_fetched} new markets.")
     print(f"Data saved to: {csv_filename}")
     print(f"Total records: {current_offset}")
-
-# if __name__ == "__main__":
-#     update_markets(batch_size=500)
